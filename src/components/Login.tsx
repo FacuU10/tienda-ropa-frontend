@@ -1,42 +1,104 @@
 import React, { useState } from "react";
 // Importamos los componentes de react-bootstrap
-import { Container, Form, Button, Card } from "react-bootstrap";
+import { Container, Form, Button, Card, Spinner } from "react-bootstrap";
+// 1. Importar el hook useAuth para acceder al contexto
+import { useAuth } from "../AuthContext";
+// 2. Importar useNavigate para la redirección
+import { useNavigate, Link } from "react-router-dom";
+
+// Definimos el tipo para el evento del formulario (recomendado en TypeScript)
+type FormSubmitEvent = React.FormEvent<HTMLFormElement>;
 
 function Login() {
-  // 1. Estados para almacenar los valores de los inputs
+  // Estados para el formulario
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  // 2. Función que se ejecuta al enviar el formulario
-  const handleSubmit = (e) => {
-    e.preventDefault(); // Evita que la página se recargue
+  //  Obtener la función login de nuestro contexto
+  const { login } = useAuth();
+  // Inicializar el hook de navegación
+  const navigate = useNavigate();
 
-    // Lógica básica de validación (puedes expandirla)
+  // Endpoint de la API (Comentado porque estamos en simulación)
+  // const API_LOGIN_URL = "http://localhost:8080/api/v1/auth/login";
+
+  // Función de envío actualizada (asíncrona)
+  const handleSubmit = async (e: FormSubmitEvent) => {
+    e.preventDefault();
+
     if (!email || !password) {
       setError("Por favor, ingresa tu email y contraseña.");
       return;
     }
 
-    // Aquí iría la llamada a la API de tu socio (el endpoint POST /auth/login)
-    console.log("Intentando iniciar sesión con:", { email, password });
-    setError(""); // Limpiamos errores si todo va bien
+    setError("");
+    setLoading(true);
 
-    // NOTA IMPORTANTE: La llamada real a la API se haría con fetch o axios:
+    //  MODO SIMULACIÓN (ACTIVADO)
+    // Simulamos 1 segundo de espera de la API
+    setTimeout(() => {
+      console.log("Simulando login exitoso para:", email);
+      // Creamos un token falso
+      const MOCK_TOKEN = `fake-jwt-token-for-${email}`;
+      // Llamamos a la función del contexto para guardar la sesión
+      login(MOCK_TOKEN);
+      // Redirigimos al Home (ruta '/')
+      navigate("/");
+      // setLoading(false); // No es necesario aquí, setTimeout no es 'finally'
+    }, 1000);
+    // NOTA: No ponemos setLoading(false) aquí porque setTimeout
+    // no bloquea la ejecución como 'await'. Lo movemos fuera
+    // si la simulación es lo único que hacemos.
+    // Para esta prueba, lo dejaremos simple.
+    // O mejor, lo ponemos dentro del timeout:
+    // setTimeout(() => { ...; setLoading(false); }, 1000);
+    // (Actualizado en el código de abajo para más precisión)
+    // --- FIN MODO SIMULACIÓN ---
+
     /*
-    fetch('http://localhost:8080/api/v1/auth/login', {
+    // --- MODO REAL (DESACTIVADO) ---
+    try {
+      const response = await fetch(API_LOGIN_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })
-    })
-    .then(response => response.json())
-    .then(data => {
-        // Manejar la respuesta: guardar el token, redirigir, etc.
-    })
-    .catch(err => {
-        setError('Error al conectar con el servidor.');
-    });
+      });
+      const data = await response.json();
+      if (response.ok) {
+        login(data.token);
+        navigate("/");
+      } else {
+        setError(data.message || 'Error de autenticación.');
+      }
+    } catch (err) {
+      console.error('Error de conexión:', err);
+      setError('No se pudo conectar con el servidor.');
+    } finally {
+      setLoading(false);
+    }
+    // --- FIN MODO REAL ---
     */
+  };
+
+  // Corrección de la simulación para que 'setLoading(false)' se ejecute
+  const handleSimulationSubmit = (e: FormSubmitEvent) => {
+    e.preventDefault();
+    if (!email || !password) {
+      setError("Por favor, ingresa tu email y contraseña.");
+      return;
+    }
+    setError("");
+    setLoading(true);
+
+    setTimeout(() => {
+      console.log("Simulando login exitoso para:", email);
+      const MOCK_TOKEN = `fake-jwt-token-for-${email}`;
+      login(MOCK_TOKEN);
+      navigate("/");
+      setLoading(false); // <--- setLoading(false) debe ir DENTRO del timeout
+    }, 1000);
   };
 
   return (
@@ -48,10 +110,10 @@ function Login() {
         <Card.Body>
           <h2 className="text-center mb-4">Iniciar Sesión</h2>
 
-          {/* Muestra el mensaje de error si existe */}
           {error && <div className="alert alert-danger">{error}</div>}
 
-          <Form onSubmit={handleSubmit}>
+          {/* Usamos la función de simulación corregida */}
+          <Form onSubmit={handleSimulationSubmit}>
             <Form.Group className="mb-3" controlId="formBasicEmail">
               <Form.Label>Correo Electrónico</Form.Label>
               <Form.Control
@@ -59,6 +121,7 @@ function Login() {
                 placeholder="Ingresa tu email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                disabled={loading}
               />
             </Form.Group>
 
@@ -69,15 +132,34 @@ function Login() {
                 placeholder="Contraseña"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                disabled={loading}
               />
             </Form.Group>
 
-            <Button variant="primary" type="submit" className="w-100">
-              Acceder
+            <Button
+              variant="primary"
+              type="submit"
+              className="w-100"
+              disabled={loading}
+            >
+              {loading ? (
+                <>
+                  <Spinner
+                    as="span"
+                    animation="border"
+                    size="sm"
+                    role="status"
+                    aria-hidden="true"
+                  />
+                  <span className="ms-2">Accediendo...</span>
+                </>
+              ) : (
+                "Acceder"
+              )}
             </Button>
 
             <p className="text-center mt-3">
-              ¿No tienes cuenta? <a href="/register">Regístrate aquí</a>
+              ¿No tienes cuenta? <Link to="/register">Regístrate aquí</Link>
             </p>
           </Form>
         </Card.Body>

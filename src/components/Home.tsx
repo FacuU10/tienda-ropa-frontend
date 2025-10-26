@@ -1,44 +1,26 @@
 import React from "react";
-// 1. Importamos el hook useAuth para acceder a las funciones del contexto
-import { useAuth } from "../AuthContext";
-import { Container, Button } from "react-bootstrap";
+import { Button, Container } from "react-bootstrap";
+import { useAuth } from "../AuthContext"; // Importamos el hook
 
 function Home() {
-  // 2. Obtenemos la función logout del contexto
-  const { logout, token } = useAuth();
+  // Obtenemos la función logout y el estado isLoggedIn
+  const { logout, isLoggedIn } = useAuth();
 
-  // Función que se ejecuta al hacer clic en el botón
   const handleLogout = () => {
-    logout(); // Llama a la función logout que elimina el token y redirige
+    logout();
+    // La redirección a /login es manejada automáticamente
+    // por el componente PrivateRoute
   };
 
   return (
-    <Container className="text-center mt-5">
-      <h1>¡Bienvenido a la Tienda de Ropa!</h1>
-      <p>Has iniciado sesión con éxito.</p>
-
-      {/* Opcional: Mostrar el token (Solo para desarrollo, no para producción) */}
-      <small className="d-block mb-4 text-muted">
-        Tu token (para llamadas API):{" "}
-        {token ? token.substring(0, 15) + "..." : "N/A"}
-      </small>
-
-      {/* Botón de Cerrar Sesión */}
-      <Button
-        variant="danger"
-        size="lg"
-        onClick={handleLogout}
-        className="shadow-sm"
-      >
-        Cerrar Sesión
-      </Button>
-
-      <div className="mt-5">
-        <h2>Productos Destacados</h2>
-        <p>
-          Aquí irá el código para llamar al endpoint GET /products y mostrarlos.
-        </p>
-      </div>
+    <Container className="mt-5 text-center">
+      <h1>Bienvenido a Ivaga</h1>
+      <p>Has iniciado sesión correctamente.</p>
+      {isLoggedIn && (
+        <Button variant="danger" onClick={handleLogout}>
+          Cerrar Sesión
+        </Button>
+      )}
     </Container>
   );
 }
